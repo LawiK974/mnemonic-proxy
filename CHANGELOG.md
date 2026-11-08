@@ -214,6 +214,14 @@
 - The dashboard reads the same two files (`--api-key-file` for Strata, `--proxy-api-key-file` for the proxy, which
   defaults to `--api-key-file`), so its 📌 / 🗑 calls keep working against a proxy that requires a key and `--api-key-file`
   is now sent to Strata itself (`/status`, `/metrics`).
+- **Docker**: `Dockerfile` runs the proxy and the dashboard in one container (`/data` holds the archive, the engine
+  stays outside). Settings come from the environment: `UPSTREAM`, `API_KEY` (the key sent to the engine), `CLIENT_KEY`
+  (the key clients must send, the one that activates the check; defaults to `API_KEY`), `PROXY_HOST`/`PROXY_PORT`,
+  `DASH_HOST`/`DASH_PORT`, `PROXY_ARGS`. Both keys are written to `0600` files in `DATA` and read through
+  `--client-key-file` / `--api-key-file`, so neither appears in the command line or the process list. The dashboard
+  keeps its loopback-only bind, so use `--network=host` on Linux to open it in a browser. `.github/workflows/docker.yml`
+  builds the image and smoke-tests it against the fake engine: keyed request 200, unkeyed 401, dashboard answering
+  inside the container and forwarding the key.
 
 ## 0.3.25 — 2026-11-11
 
