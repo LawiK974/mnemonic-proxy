@@ -187,6 +187,34 @@ class CliTests(Base):
         msg, _ = self.run_main("--require-api-key")
         self.assertIn("--require-api-key needs --client-key-file", msg)
 
+    def test_client_key_file_alone_implies_the_flag(self):
+        path = os.path.join(self.tmp.name, "client.key")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("client-secret\n")
+        code, err = self.run_main("--client-key-file", path)
+        self.assertIsNone(code)
+        self.assertIn("api key required", err)
+
+    def test_api_key_file_is_the_key_sent_upstream(self):
+        from types import SimpleNamespace
+        from ctxproxy.server import resolve_keys
+        path = os.path.join(self.tmp.name, "engine.key")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("engine-secret\n")
+        a = SimpleNamespace(api_key="inline", api_key_file=path, client_key_file=None, require_api_key=False)
+        resolve_keys(a)
+        self.assertEqual(a.api_key, "engine-secret")
+        self.assertEqual(a.client_key, "")
+
+    def test_api_key_file_refuses(self):
+        path = os.path.join(self.tmp.name, "engine.key")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n")
+        msg, _ = self.run_main("--api-key-file", path)
+        self.assertIn("--api-key-file is empty", msg)
+        msg, _ = self.run_main("--api-key-file", os.path.join(self.tmp.name, "nope.key"))
+        self.assertIn("cannot read --api-key-file", msg)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

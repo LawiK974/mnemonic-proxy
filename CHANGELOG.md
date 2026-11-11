@@ -47,10 +47,11 @@
   write the archive and reach the engine. With the flag set, a request must carry the client key as
   `Authorization: Bearer <key>` (what the OpenAI clients send) or `x-api-key` (what the Anthropic ones send), compared
   in constant time, and anything else gets HTTP 401 on every path, including `/health` and the `/v1/strata/*` ones.
-  The key is read from `--client-key-file`, so it stays out of the command line and the process list, and it can be a
-  different one from `--api-key`: giving clients the engine key would let them bypass the proxy and hit the engine
-  directly. `--require-api-key` without a key is a startup error, and `--api-key` alone is accepted only as a fallback
-  (the key then appears in the process list).
+  The two keys are read from files (`--client-key-file` for the client key, `--api-key-file` for the engine key), so
+  they stay out of the command line and the process list, and they can be different ones: giving clients the engine
+  key would let them bypass the proxy and hit the engine directly. `--require-api-key` without a key is a startup
+  error, and `--api-key` alone is accepted only as a fallback (the key then appears in the process list).
+  `--client-key-file` implies `--require-api-key`.
 - **Breaking**: outside this machine the proxy refuses to start with no client authentication. `--host 0.0.0.0`
   without `--require-api-key` used to start and log a warning, now it exits; the one-line fix is
   `--require-api-key --client-key-file <file>`. The dashboard forwards `--proxy-api-key-file` (defaults to
