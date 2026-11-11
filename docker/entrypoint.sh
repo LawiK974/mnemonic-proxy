@@ -23,7 +23,7 @@ if [ -n "$client_key" ]; then
 fi
 
 proxy=(python -m ctxproxy.server --upstream "$UPSTREAM" --host "$PROXY_HOST" --port "$PROXY_PORT" --data "$DATA")
-if [ -n "$API_KEY" ]; then proxy+=(--api-key "$API_KEY"); fi
+if [ -n "$API_KEY" ]; then proxy+=(--api-key-file "$engine_key"); fi
 if [ "${REQUIRE_API_KEY:-1}" = 1 ]; then
   proxy+=(--require-api-key)
   if [ -n "$client_file" ]; then proxy+=(--client-key-file "$client_file"); fi
@@ -32,7 +32,8 @@ if [ -n "${PROXY_ARGS:-}" ]; then proxy+=($PROXY_ARGS); fi   # word-splitting in
 
 dash=(python dashboard/ctxdash.py --strata "$UPSTREAM" --data "$DATA"
       --proxy "http://127.0.0.1:$PROXY_PORT" --host "$DASH_HOST" --port "$DASH_PORT")
-if [ -n "$client_file" ]; then dash+=(--api-key-file "$engine_key" --proxy-api-key-file "$client_file"); fi
+if [ -n "$engine_key" ]; then dash+=(--api-key-file "$engine_key"); fi
+if [ -n "$client_file" ]; then dash+=(--proxy-api-key-file "$client_file"); fi
 
 "${proxy[@]}" & proxy_pid=$!
 "${dash[@]}" & dash_pid=$!

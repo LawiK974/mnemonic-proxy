@@ -239,7 +239,8 @@ and is not listed here.
 | | `--mode tools\|off` | `tools` = managed context (default); `off` = plain pass-through, nothing archived or masked, useful to compare a session with and without the proxy |
 | | `--tokenizer PATH` | Hugging Face `tokenizer.json` (or a Strata pack `tokenizer/` folder) for exact token counts; needs `pip install 'mnemonic-proxy[exact]'` |
 | | `--api-key KEY` | key sent to the upstream engine |
-| | `--client-key-file FILE` | file holding the key clients must send; keeps it out of the command line, and can be a different secret from `--api-key` |
+| | `--api-key-file FILE` | file holding the key sent to the upstream engine; keeps it out of the command line, overrides `--api-key` |
+| | `--client-key-file FILE` | file holding the key clients must send; keeps it out of the command line, can be a different secret from `--api-key`, and implies `--require-api-key` |
 | | `--require-api-key` | require clients to send the client key (`Authorization: Bearer` or `x-api-key`); mandatory when `--host` is not a loopback address ([Security & privacy](security.md#security--privacy)) |
 | | `--engine auto\|strata\|llama.cpp\|ds4\|openai` | force the engine type instead of detecting it |
 | | `--version` | print the version and exit |

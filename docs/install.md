@@ -616,7 +616,7 @@ inside the container. The engine is expected outside the container (use `host.do
 | env | default | |
 |---|---|---|
 | `UPSTREAM` | `http://127.0.0.1:8095` | the engine; also what the dashboard reads |
-| `API_KEY` | empty | key sent upstream, written to `/data/.api_key` (`0600`) and forwarded to the dashboard |
+| `API_KEY` | empty | key sent upstream, written to `/data/.api_key` (`0600`) and read by the proxy (`--api-key-file`) and the dashboard |
 | `CLIENT_KEY` | empty | key clients must send, written to `/data/.client_key` (`0600`) and read by the proxy with `--client-key-file`; defaults to `API_KEY` |
 | `REQUIRE_API_KEY` | `1` | clients must carry it; with no key at all the proxy refuses to start |
 | `PROXY_HOST` / `PROXY_PORT` | `0.0.0.0` / `8096` | published, authenticated |

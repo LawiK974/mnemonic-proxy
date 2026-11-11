@@ -1482,9 +1482,12 @@ def build_parser(prog="mnemonic-proxy", description=None):
     ap.add_argument("--config", help="JSON file with Config fields (window, thresholds, feature flags)")
     ap.add_argument("--tokenizer", help="HF tokenizer.json for exact token counts (optional; default chars/3.5)")
     ap.add_argument("--api-key", default="", help="API key sent to the upstream engine (optional)")
+    ap.add_argument("--api-key-file", help="file holding the key sent to the upstream engine; keeps the secret out "
+                                           "of the command line (overrides --api-key)")
     ap.add_argument("--client-key-file", help="file holding the key clients must send; keeps the secret out of the "
-                                             "command line. Without it --require-api-key checks --api-key, which is "
-                                             "visible in the process list and lets clients reach the engine directly.")
+                                             "command line and implies --require-api-key. Without it "
+                                             "--require-api-key checks --api-key, which is visible in the process "
+                                             "list and lets clients reach the engine directly.")
     ap.add_argument("--require-api-key", action="store_true",
                     help="clients must send the client key (Authorization: Bearer or x-api-key); "
                          "mandatory when --host is not a loopback address")
@@ -1648,26 +1651,42 @@ def main(argv=None):
         raise SystemExit("mnemonic-proxy: %s" % e) from None
 
 
+def resolve_keys(a):
+    """Read the two key files into the keys used at runtime, so the server and `check` see the same ones.
+    A missing or empty file is a startup error, never a silently open request."""
+    if a.api_key_file:
+        a.api_key = read_key_file(a.api_key_file, "--api-key-file")
+    if a.client_key_file:
+        a.require_api_key = True   # a client key file only makes sense if the key is checked
+        a.client_key = read_key_file(a.client_key_file, "--client-key-file")
+    elif a.require_api_key:
+        if not a.api_key:
+            raise SystemExit("mnemonic-proxy: --require-api-key needs --client-key-file (or --api-key): clients are "
+                             "checked against that key.")
+        a.client_key = a.api_key
+    else:
+        a.client_key = ""
+
+
+def read_key_file(path, label):
+    """The key held in a 0600 file instead of on the command line."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            key = f.read().strip()
+    except OSError as e:
+        raise SystemExit("mnemonic-proxy: cannot read %s: %s" % (label, e))
+    if not key:
+        raise SystemExit("mnemonic-proxy: %s is empty" % label)
+    return key
+
+
 def serve(a, raw_cfg, cfg, origin=None):
     """Run only while main owns the data directory's maintenance lock."""
     # The archive is plaintext, so an open proxy on a reachable address is an open archive. The key clients are
     # checked against comes from a file (--client-key-file) when possible: a separate one also keeps the engine's
     # key from being handed to whoever is allowed to use the proxy.
-    if a.require_api_key:
-        if a.client_key_file:
-            try:
-                client_key = open(a.client_key_file, encoding="utf-8").read().strip()
-            except OSError as e:
-                raise SystemExit("mnemonic-proxy: cannot read --client-key-file: %s" % e)
-            if not client_key:
-                raise SystemExit("mnemonic-proxy: --client-key-file is empty")
-        elif a.api_key:
-            client_key = a.api_key
-        else:
-            raise SystemExit("mnemonic-proxy: --require-api-key needs --client-key-file (or --api-key): clients are "
-                             "checked against that key.")
-    else:
-        client_key = ""
+    resolve_keys(a)
+    client_key = a.client_key
     if not a.require_api_key and not is_loopback(a.host):
         raise SystemExit("mnemonic-proxy: refusing to start on %s with no client authentication: anyone who can reach "
                          "this port reads and writes the archive and the engine. Add --require-api-key with "
